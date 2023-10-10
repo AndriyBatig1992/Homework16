@@ -67,16 +67,32 @@ def run(server_class = HTTPServer, handler_class = HttpHandler):
     except KeyboardInterrupt:
         http.server_close()
 
+
 def save_data(data):
     body = urllib.parse.unquote(data.decode())
     try:
         payload = {key: value for key, value in [el.split('=') for el in body.split('&')]}
+        try:
+            with open(Base_DIR.joinpath('data/data.json')) as file:
+                existing_data = json.load(file)
+                if not isinstance(existing_data, list):
+                    existing_data = []
+        except FileNotFoundError:
+            existing_data = []
+
+        existing_data.append(payload)
+
         with open(Base_DIR.joinpath('data/data.json'), 'w', encoding='utf-8') as fd:
-            json.dump(payload, fd, ensure_ascii=False)
+            json.dump(existing_data, fd, ensure_ascii=False, indent=4)
+
+        logging.info('Дані успішно додано до JSON-файлу.')
     except ValueError as err:
-        logging.error(f'Field parse data {body} with error {err}')
+        logging.error(f'Помилка при обробці даних {body} з помилкою {err}')
     except OSError as err:
-        logging.error(f'Field parse data {body} with error {err}')
+        logging.error(f'Помилка при обробці даних {body} з помилкою {err}')
+
+
+
 
 def run_socket_server(ip, port):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -93,11 +109,11 @@ def run_socket_server(ip, port):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO, format='%(treadName)s %(message)s')
+    logging.basicConfig(level=logging.INFO, format='%(threadName)s %(message)s')
     STORAGE_DIR = pathlib.Path().joinpath('data')
     FILE_STORAGE = STORAGE_DIR / 'data.json'
     if not FILE_STORAGE.exists():
-        with open(FILE_STORAGE.joinpath('data.json'), 'w', encoding='utf-8') as fd:
+        with open(FILE_STORAGE, 'w', encoding='utf-8') as fd:
             json.dump({}, fd, ensure_ascii=False)
 
     tread_server = Thread(target = run)
